@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>JLPT N3 Grammar Flashcards (Ultimate)</title>
+    <style>
+        :root {
+            --primary: #10b981; 
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --example-bg: #f1f5f9;
+        }
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .container {
+            width: 90%;
+            max-width: 400px;
+            perspective: 1000px;
+        }
+        .card {
+            width: 100%;
+            height: 550px; 
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.5s ease-in-out;
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-radius: 20px;
+        }
+        .card.is-flipped {
+            transform: rotateY(180deg);
+        }
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 25px;
+            box-sizing: border-box;
+            border-radius: 20px;
+            background: var(--card-bg);
+            text-align: center;
+        }
+        .card-face-back {
+            transform: rotateY(180deg);
+            text-align: left;
+            justify-content: flex-start;
+            overflow-y: auto;
+            background: var(--card-bg);
+            padding-top: 20px;
+            padding-bottom: 20px;
+        }
+        .pattern-name { font-size: 2rem; font-weight: bold; color: var(--primary); margin-bottom: 15px; }
+        .explanation { font-size: 1.1rem; color: #475569; line-height: 1.5; padding: 0 10px; }
+        .example-container { width: 100%; margin-bottom: 12px; background: var(--example-bg); padding: 12px; border-radius: 12px; border-left: 4px solid var(--primary); box-sizing: border-box; }
+        .example-jp { font-size: 1.1rem; font-weight: bold; margin-bottom: 4px; color: var(--text); }
+        .example-en { font-size: 0.9rem; color: #64748b; line-height: 1.3; }
+        .controls { margin-top: 25px; display: flex; gap: 20px; align-items: center; }
+        button { padding: 15px 30px; border: none; border-radius: 50px; background: var(--primary); color: white; font-size: 1rem; font-weight: bold; cursor: pointer; transition: background 0.2s; touch-action: manipulation; }
+        button:active { background: #059669; }
+        .progress { font-size: 1.2rem; font-weight: bold; color: #64748b; margin-bottom: 20px; }
+        .hint { font-size: 0.8rem; color: #94a3b8; margin-top: 20px; position: absolute; bottom: 20px; }
+        .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; border-radius: 50%; background: var(--primary); color: white; font-size: 2rem; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); cursor: pointer; z-index: 100; padding: 0; }
+        .action-btns { width: 100%; display: flex; justify-content: space-between; margin-top: 15px; }
+        .btn-small { padding: 8px 15px; font-size: 0.9rem; background: #e2e8f0; color: #334155; border-radius: 8px; }
+        .btn-save-edit { background: #10b981; color: white; display: none; }
+        .edit-fields { display: none; width: 100%; flex-direction: column; gap: 8px; }
+        .edit-fields textarea { width: 100%; padding: 8px; font-size: 0.9rem; border-radius: 8px; border: 1px solid #cbd5e1; font-family: inherit; resize: none; box-sizing: border-box; height: 40px; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 200; }
+        .modal { background: white; padding: 20px; border-radius: 20px; width: 85%; max-width: 350px; display: flex; flex-direction: column; gap: 8px; max-height: 90vh; overflow-y: auto; }
+        .modal h3 { margin: 0 0 5px 0; color: var(--primary); font-size: 1.2rem; }
+        .modal input, .modal textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: inherit; box-sizing: border-box; }
+        .modal textarea { height: 40px; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 5px; }
+        .modal-actions button.btn-cancel { background: #e2e8f0; color: #334155; }
+        .modal-actions button.btn-confirm { background: #10b981; }
+    </style>
+</head>
+<body>
+
+    <div class="progress" id="progress">1 / 90</div>
+
+    <div class="container" id="swipe-container">
+        <div class="card" id="card">
+            <div class="card-face card-face-front">
+                <div class="pattern-name" id="pattern-name">Loading...</div>
+                <div class="explanation" id="explanation"></div>
+                <div class="hint">Tap to see examples</div>
+            </div>
+            
+            <div class="card-face card-face-back">
+                <div id="examples-display" style="width: 100%;">
+                    <div class="example-container"><div class="example-jp" id="ex1-jp">Loading...</div><div class="example-en" id="ex1-en"></div></div>
+                    <div class="example-container"><div class="example-jp" id="ex2-jp">Loading...</div><div class="example-en" id="ex2-en"></div></div>
+                    <div class="example-container"><div class="example-jp" id="ex3-jp">Loading...</div><div class="example-en" id="ex3-en"></div></div>
+                    <div class="example-container"><div class="example-jp" id="ex4-jp">Loading...</div><div class="example-en" id="ex4-en"></div></div>
+                    <div class="example-container"><div class="example-jp" id="ex5-jp">Loading...</div><div class="example-en" id="ex5-en"></div></div>
+                </div>
+
+                <div class="edit-fields" id="edit-fields">
+                    <textarea id="edit-ex1-jp" placeholder="Ex 1 (JP)"></textarea><textarea id="edit-ex1-en" placeholder="Ex 1 (EN)"></textarea>
+                    <textarea id="edit-ex2-jp" placeholder="Ex 2 (JP)"></textarea><textarea id="edit-ex2-en" placeholder="Ex 2 (EN)"></textarea>
+                    <textarea id="edit-ex3-jp" placeholder="Ex 3 (JP)"></textarea><textarea id="edit-ex3-en" placeholder="Ex 3 (EN)"></textarea>
+                    <textarea id="edit-ex4-jp" placeholder="Ex 4 (JP)"></textarea><textarea id="edit-ex4-en" placeholder="Ex 4 (EN)"></textarea>
+                    <textarea id="edit-ex5-jp" placeholder="Ex 5 (JP)"></textarea><textarea id="edit-ex5-en" placeholder="Ex 5 (EN)"></textarea>
+                </div>
+                
+                <div class="action-btns">
+                    <button class="btn-small" id="btn-edit">Edit Examples</button>
+                    <button class="btn-small btn-save-edit" id="btn-save-edit">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button id="btn-prev">Prev</button>
+        <button id="btn-next">Next</button>
+    </div>
+
+    <button class="fab" id="btn-add-card">+</button>
+
+    <div class="modal-overlay" id="add-modal">
+        <div class="modal">
+            <h3>Add N3 Grammar</h3>
+            <input type="text" id="new-pattern" placeholder="Pattern (e.g. 〜おかげで)">
+            <textarea id="new-explanation" placeholder="Explanation..."></textarea>
+            <textarea id="new-ex1" placeholder="Ex 1: JP - EN"></textarea>
+            <textarea id="new-ex2" placeholder="Ex 2: JP - EN"></textarea>
+            <textarea id="new-ex3" placeholder="Ex 3: JP - EN"></textarea>
+            <textarea id="new-ex4" placeholder="Ex 4: JP - EN"></textarea>
+            <textarea id="new-ex5" placeholder="Ex 5: JP - EN"></textarea>
+            <div class="modal-actions">
+                <button class="btn-cancel" id="btn-cancel-add">Cancel</button>
+                <button class="btn-confirm" id="btn-confirm-add">Save Card</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            
+            const defaultData = [
+                // CAUSE, REASON, DEPENDENCE
+                { pat: "〜おかげで", exp: "Thanks to... (Positive result).", ex1jp: "先生のおかげで合格しました。", ex1en: "Thanks to the teacher, I passed.", ex2jp: "薬を飲んだおかげで治った。", ex2en: "Thanks to taking medicine, I healed.", ex3jp: "天気がいいおかげで楽しかった。", ex3en: "Thanks to the good weather, it was fun.", ex4jp: "彼が手伝ってくれたおかげで終わった。", ex4en: "Thanks to his help, it finished.", ex5jp: "奨学金のおかげで留学できた。", ex5en: "Thanks to the scholarship, I studied abroad." },
+                { pat: "〜せいで", exp: "Because of... (Negative result / fault).", ex1jp: "雨のせいで中止になった。", ex1en: "Because of the rain, it was canceled.", ex2jp: "バスが遅れたせいで遅刻した。", ex2en: "Because the bus was late, I was tardy.", ex3jp: "食べすぎたせいで腹が痛い。", ex3en: "Because I ate too much, my stomach hurts.", ex4jp: "彼のせいで失敗した。", ex4en: "Because of him, we failed.", ex5jp: "寝不足のせいで頭が痛い。", ex5en: "Because of a lack of sleep, my head hurts." },
+                { pat: "〜によって (Means/Cause)", exp: "By means of / Due to / Because of.", ex1jp: "事故によって電車が止まった。", ex1en: "Due to an accident, the train stopped.", ex2jp: "話し合いによって解決した。", ex2en: "It was resolved through discussion.", ex3jp: "インターネットによって世界が変わった。", ex3en: "Through the internet, the world changed.", ex4jp: "地震によって家が壊れた。", ex4en: "Because of the earthquake, houses broke.", ex5jp: "テストによって実力を測る。", ex5en: "We measure ability by means of a test." },
+                { pat: "〜によって (Depending on)", exp: "Depending on... / Differs by...", ex1jp: "人によって考え方が違う。", ex1en: "Ways of thinking differ depending on the person.", ex2jp: "国によって習慣が異なる。", ex2en: "Customs differ depending on the country.", ex3jp: "日によって天気が変わる。", ex3en: "The weather changes depending on the day.", ex4jp: "場合によっては中止になる。", ex4en: "Depending on the situation, it will be canceled.", ex5jp: "年齢によって値段が違います。", ex5en: "The price differs depending on age." },
+                { pat: "〜によって (Passive Agent)", exp: "By (someone). Used in passive voice sentences.", ex1jp: "この絵はピカソによって描かれた。", ex1en: "This picture was painted by Picasso.", ex2jp: "電話はベルによって発明された。", ex2en: "The telephone was invented by Bell.", ex3jp: "この本は彼によって書かれた。", ex3en: "This book was written by him.", ex4jp: "新法が政府によって発表された。", ex4en: "The new law was announced by the government.", ex5jp: "町は市長によって作られた。", ex5en: "The town was built by the mayor." },
+                { pat: "〜からには", exp: "Now that... / Since... (Implies obligation/determination).", ex1jp: "約束したからには守るべきだ。", ex1en: "Now that you promised, you should keep it.", ex2jp: "日本にいるからには日本語を話したい。", ex2en: "Since I am in Japan, I want to speak Japanese.", ex3jp: "参加するからには勝ちたい。", ex3en: "Now that I'm participating, I want to win.", ex4jp: "プロであるからには責任がある。", ex4en: "Since you are a professional, you have responsibility.", ex5jp: "やると決めたからには最後までやる。", ex5en: "Now that I've decided to do it, I'll do it to the end." },
+                { pat: "〜ばかりに", exp: "Simply because... (Leads to a negative result).", ex1jp: "お金がないばかりに大学を辞めた。", ex1en: "Simply because I had no money, I quit university.", ex2jp: "嘘をついたばかりに別れた。", ex2en: "Simply because I lied, we broke up.", ex3jp: "遅れたばかりに飛行機に乗れなかった。", ex3en: "Simply because I was late, I missed the flight.", ex4jp: "知らないばかりに苦労した。", ex4en: "Simply because I didn't know, I struggled.", ex5jp: "本当のことを言ったばかりに怒られた。", ex5en: "Simply because I told the truth, I got scolded." },
+                { pat: "〜ものだから / 〜もので", exp: "Because... (Used for excuses/apologies).", ex1jp: "渋滞していたものだから、遅れました。", ex1en: "Because there was traffic, I was late.", ex2jp: "初めてなもので、分かりません。", ex2en: "Because it's my first time, I don't know.", ex3jp: "急いでいたものだから、忘れた。", ex3en: "Because I was in a hurry, I forgot.", ex4jp: "安かったもので、つい買った。", ex4en: "Because it was cheap, I unintentionally bought it.", ex5jp: "子どもなもので、許してください。", ex5en: "Because they are a child, please forgive them." },
+                { pat: "〜ことだから", exp: "Knowing (that person)... (Assumption based on someone's character).", ex1jp: "真面目な彼のことだから、遅刻しない。", ex1en: "Knowing the serious him, he won't be late.", ex2jp: "忘れっぽい彼女のことだから、また忘れる。", ex2en: "Knowing the forgetful her, she'll forget again.", ex3jp: "優しい母のことだから、許してくれる。", ex3en: "Knowing my kind mother, she will forgive me.", ex4jp: "優秀な彼らのことだから、成功する。", ex4en: "Knowing the excellent them, they will succeed.", ex5jp: "子どものことだから、すぐ泣く。", ex5en: "Because they are children (as expected), they cry easily." },
+                { pat: "〜だけに", exp: "Being that... / Precisely because... (As expected).", ex1jp: "一生懸命練習しただけに、優勝は嬉しい。", ex1en: "Precisely because I practiced hard, winning makes me happy.", ex2jp: "有名な店だけに、美味しい。", ex2en: "Being a famous shop, it is delicious.", ex3jp: "期待が大きかっただけに、ショックだ。", ex3en: "Precisely because expectations were high, the shock is big.", ex4jp: "安いだけに、すぐ壊れた。", ex4en: "Being that it was cheap, it broke quickly.", ex5jp: "彼は長く住んでいるだけに、詳しい。", ex5en: "Precisely because he has lived here long, he knows a lot." },
+
+                // TIME, OCCURRENCE, SEQUENCE
+                { pat: "〜最中に (さいちゅうに)", exp: "Right in the middle of doing something.", ex1jp: "会議の最中に電話が鳴った。", ex1en: "Right in the middle of the meeting, the phone rang.", ex2jp: "シャワーの最中に客が来た。", ex2en: "Right in the middle of the shower, a guest came.", ex3jp: "テストの最中に腹が痛くなった。", ex3en: "Right in the middle of the test, my stomach hurt.", ex4jp: "料理の最中にガスが止まった。", ex4en: "Right in the middle of cooking, the gas stopped.", ex5jp: "考えている最中に話しかけないで。", ex5en: "Don't talk to me right in the middle of thinking." },
+                { pat: "〜うちに", exp: "While (a state persists) / Before (a state changes).", ex1jp: "若いうちに経験した方がいい。", ex1en: "While young, you should experience things.", ex2jp: "温かいうちに食べてください。", ex2en: "Please eat while it's warm.", ex3jp: "日本にいるうちに富士山に登りたい。", ex3en: "While in Japan, I want to climb Mt. Fuji.", ex4jp: "雨が降らないうちに帰ろう。", ex4en: "Before it rains, let's go home.", ex5jp: "忘れないうちにメモする。", ex5en: "Before I forget, I'll take a memo." },
+                { pat: "〜間に (あいだに)", exp: "While / During the time when (An action occurs).", ex1jp: "母が寝ている間にゲームをした。", ex1en: "While my mother slept, I played a game.", ex2jp: "夏休みの間に本を５冊読んだ。", ex2en: "During summer vacation, I read 5 books.", ex3jp: "留守の間に泥棒が入った。", ex3en: "While I was away, a thief broke in.", ex4jp: "電車に乗っている間に寝た。", ex4en: "While riding the train, I slept.", ex5jp: "日本にいる間に友達ができた。", ex5en: "While in Japan, I made friends." },
+                { pat: "〜たびに", exp: "Every time... / Whenever...", ex1jp: "この曲を聞くたびに昔を思い出す。", ex1en: "Every time I hear this song, I remember the past.", ex2jp: "彼は会うたびに髪の色が違う。", ex2en: "Every time I meet him, his hair color is different.", ex3jp: "買い物のたびに袋をもらう。", ex3en: "Every time I shop, I receive a bag.", ex4jp: "旅行のたびにお土産を買う。", ex4en: "Every time I travel, I buy souvenirs.", ex5jp: "失敗するたびに強くなる。", ex5en: "Every time you fail, you get stronger." },
+                { pat: "〜ついでに", exp: "While doing A, take the opportunity to do B.", ex1jp: "散歩のついでに手紙を出した。", ex1en: "While walking, I mailed a letter.", ex2jp: "スーパーへ行くついでに銀行に寄る。", ex2en: "While going to the supermarket, I'll stop at the bank.", ex3jp: "掃除のついでに靴も洗った。", ex3en: "While cleaning, I also washed shoes.", ex4jp: "出張のついでに友達に会った。", ex4en: "While on a business trip, I met a friend.", ex5jp: "コンビニへ行くついでに水を買ってきて。", ex5en: "While going to the convenience store, buy water." },
+                { pat: "〜てからでないと", exp: "Unless A happens, B cannot happen.", ex1jp: "上司に聞いてからでないと決められない。", ex1en: "Unless I ask my boss, I cannot decide.", ex2jp: "手を洗ってからでないと食べてはいけない。", ex2en: "Unless you wash hands, you must not eat.", ex3jp: "契約書を読んでからでないとサインできない。", ex3en: "Unless I read the contract, I cannot sign.", ex4jp: "病気が治ってからでないと運動できない。", ex4en: "Unless the illness is cured, you cannot exercise.", ex5jp: "お金をもらってからでないと渡せない。", ex5en: "Unless I get the money, I cannot hand it over." },
+                { pat: "〜たとたん(に)", exp: "As soon as... / Just when...", ex1jp: "窓を開けたとたん、風が入った。", ex1en: "As soon as I opened the window, wind came in.", ex2jp: "お酒を飲んだとたん、顔が赤くなった。", ex2en: "As soon as he drank alcohol, his face turned red.", ex3jp: "ベッドに入ったとたん、寝た。", ex3en: "As soon as I got in bed, I slept.", ex4jp: "家を出たとたん、雨が降った。", ex4en: "As soon as I left the house, it rained.", ex5jp: "先生を見たとたん、安心した。", ex5en: "As soon as I saw the teacher, I felt relieved." },
+                { pat: "〜か〜ないかのうちに", exp: "Right after... / The moment that...", ex1jp: "授業が終わるか終わらないかのうちに帰った。", ex1en: "He went home the moment class ended.", ex2jp: "ベッドに着くか着かないかのうちに寝た。", ex2en: "I fell asleep the moment I hit the bed.", ex3jp: "ベルが鳴るか鳴らないかのうちに走った。", ex3en: "I ran the moment the bell rang.", ex4jp: "雨が止むか止まないかのうちに出かけた。", ex4en: "I went out the moment the rain stopped.", ex5jp: "ドアが開くか開かないかのうちに飛び出した。", ex5en: "I jumped out the moment the door opened." },
+                { pat: "〜次第 (しだい)", exp: "As soon as... (Used for future actions/business).", ex1jp: "分かり次第、連絡します。", ex1en: "As soon as I find out, I will contact you.", ex2jp: "荷物が着き次第、電話してください。", ex2en: "As soon as the package arrives, please call.", ex3jp: "雨が止み次第、出発します。", ex3en: "As soon as the rain stops, we will depart.", ex4jp: "会議が終わり次第、行きます。", ex4en: "As soon as the meeting ends, I will go.", ex5jp: "準備ができ次第、始めましょう。", ex5en: "As soon as preparations are done, let's begin." },
+                { pat: "〜て以来 (ていらい)", exp: "Ever since... (A state has continued).", ex1jp: "日本に来て以来、毎日忙しい。", ex1en: "Ever since coming to Japan, I'm busy every day.", ex2jp: "卒業して以来、彼に会っていない。", ex2en: "Ever since graduating, I haven't met him.", ex3jp: "パソコンを買って以来、ゲームをしている。", ex3en: "Ever since buying a PC, I play games.", ex4jp: "あの事件以来、夜歩くのが怖い。", ex4en: "Ever since that incident, walking at night is scary.", ex5jp: "結婚して以来、夫が料理している。", ex5en: "Ever since marrying, my husband cooks." },
+                { pat: "〜てはじめて", exp: "Not until... did I... / Only after... did I realize...", ex1jp: "病気になってはじめて、健康の大切さを知った。", ex1en: "Only after getting sick did I realize the importance of health.", ex2jp: "親になってはじめて、親の苦労が分かった。", ex2en: "Only after becoming a parent did I understand their struggles.", ex3jp: "失敗してはじめて、自分の弱さに気づいた。", ex3en: "Only after failing did I notice my weakness.", ex4jp: "外国に行ってはじめて、日本の良さが分かった。", ex4en: "Only after going abroad did I understand Japan's good points.", ex5jp: "彼と話してはじめて、誤解だと分かった。", ex5en: "Only after talking to him did I realize it was a misunderstanding." },
+
+                // CONTRAST, COMPARISON, ADDITION
+                { pat: "〜に比べて", exp: "Compared to...", ex1jp: "去年に比べて今年の夏は暑い。", ex1en: "Compared to last year, this summer is hot.", ex2jp: "東京は大阪に比べて人が多い。", ex2en: "Compared to Osaka, Tokyo has more people.", ex3jp: "兄に比べて弟は静かだ。", ex3en: "Compared to the older brother, the younger is quiet.", ex4jp: "昔に比べて便利になった。", ex4en: "Compared to the past, it became convenient.", ex5jp: "女性に比べて男性の方が背が高い。", ex5en: "Compared to women, men are taller." },
+                { pat: "〜に加えて", exp: "In addition to...", ex1jp: "熱に加えて咳も出る。", ex1en: "In addition to fever, I have a cough.", ex2jp: "雨に加えて風も強くなった。", ex2en: "In addition to rain, the wind got stronger.", ex3jp: "日本語に加えて英語も勉強する。", ex3en: "In addition to Japanese, I study English.", ex4jp: "学費に加えて生活費もかかる。", ex4en: "In addition to tuition, living costs are required.", ex5jp: "日曜日に加えて土曜日も休みだ。", ex5en: "In addition to Sunday, Saturday is also a day off." },
+                { pat: "〜に対して (Contrast)", exp: "In contrast to... / While...", ex1jp: "兄が静かなのに対して弟は話す。", ex1en: "In contrast to the quiet older brother, the younger talks.", ex2jp: "昨日は晴れたのに対して今日は雨だ。", ex2en: "While yesterday was sunny, today is rain.", ex3jp: "日本が湿気が多いのに対して欧州は乾燥している。", ex3en: "While Japan is humid, Europe is dry.", ex4jp: "夫は肉が好きなのに対して妻は魚が好きだ。", ex4en: "While the husband likes meat, the wife likes fish.", ex5jp: "Aが攻めるのに対してBは守る。", ex5en: "While A attacks, B defends." },
+                { pat: "〜一方(で) (いっぽうで)", exp: "On one hand... on the other hand...", ex1jp: "静かな一方で不便だ。", ex1en: "On one hand it's quiet, on the other it's inconvenient.", ex2jp: "忙しい一方で給料は安い。", ex2en: "On one hand it's busy, on the other pay is low.", ex3jp: "優しい一方で厳しい。", ex3en: "On one hand he's kind, on the other he is strict.", ex4jp: "便利な一方で危険もある。", ex4en: "On one hand it's convenient, on the other there's danger.", ex5jp: "子どもが増える一方で老人も増える。", ex5en: "While children increase, the elderly also increase." },
+                { pat: "〜反面 (はんめん)", exp: "On the other hand (opposite side of the same thing).", ex1jp: "都会は便利な反面、物価が高い。", ex1en: "The city is convenient, but on the other hand, prices are high.", ex2jp: "この薬は効く反面、副作用がある。", ex2en: "This medicine works, but on the other hand, it has side effects.", ex3jp: "真面目な反面、面白みがない。", ex3en: "Serious, but on the other hand, lacks humor.", ex4jp: "一人暮らしは自由な反面、寂しい。", ex4en: "Living alone is free, but on the other hand, lonely.", ex5jp: "パソコンは役立つ反面、目が疲れる。", ex5en: "PCs are useful, but on the other hand, eyes get tired." },
+                { pat: "〜かわりに", exp: "Instead of... / In exchange for...", ex1jp: "日曜に働くかわりに月曜に休む。", ex1en: "In exchange for working Sunday, I rest Monday.", ex2jp: "母のかわりに私が料理した。", ex2en: "I cooked instead of my mother.", ex3jp: "現金のかわりにカードで払う。", ex3en: "I pay with card instead of cash.", ex4jp: "手伝ったかわりに奢る。", ex4en: "In exchange for helping, I'll treat you.", ex5jp: "映画のかわりにDVDを見る。", ex5en: "Instead of a movie, I'll watch a DVD." },
+                { pat: "〜ばかりか / 〜ばかりでなく", exp: "Not only A, but also B.", ex1jp: "安いばかりか美味しい。", ex1en: "Not only cheap, but also delicious.", ex2jp: "英語ばかりでなくフランス語も話す。", ex2en: "Not only English, but also speaks French.", ex3jp: "雨が降るばかりか風も強い。", ex3en: "Not only is it raining, but wind is strong.", ex4jp: "美しいばかりか性格もいい。", ex4en: "Not only beautiful, but personality is good.", ex5jp: "騙したばかりかお金も盗んだ。", ex5en: "Not only deceived, but also stole money." },
+                { pat: "〜はもちろん / 〜はもとより", exp: "Not to mention... / Let alone...", ex1jp: "英語はもちろん、日本語も話せる。", ex1en: "Not to mention English, he also speaks Japanese.", ex2jp: "休日はもちろん平日も混む。", ex2en: "Not to mention holidays, weekdays are crowded too.", ex3jp: "見た目はもちろん味も最高だ。", ex3en: "Not to mention looks, taste is also the best.", ex4jp: "結果はもちろん努力も大切だ。", ex4en: "Not to mention results, effort is also important.", ex5jp: "国内はもとより海外でも人気だ。", ex5en: "Not to mention domestically, it's popular overseas." },
+                { pat: "〜うえに", exp: "Not only... but also... / On top of that...", ex1jp: "この町は静かなうえに便利だ。", ex1en: "This town is quiet, and on top of that, convenient.", ex2jp: "彼は頭がいいうえにスポーツもできる。", ex2en: "He is smart, and on top of that, can do sports.", ex3jp: "雨が降っているうえに風も強い。", ex3en: "It is raining, and on top of that, wind is strong.", ex4jp: "道に迷ったうえに財布を落とした。", ex4en: "I got lost, and on top of that, dropped my wallet.", ex5jp: "美味しくないうえに高い。", ex5en: "It's not delicious, and on top of that, expensive." },
+
+                // EXTENT, LIMITS, DEGREES
+                { pat: "〜くらい / 〜ほど", exp: "To the extent that... / As much as...", ex1jp: "死ぬほど疲れた。", ex1en: "I am tired to the extent of dying.", ex2jp: "泣きたいくらい痛い。", ex2en: "It hurts to the extent I want to cry.", ex3jp: "山ほど宿題がある。", ex3en: "Homework to the extent of a mountain.", ex4jp: "声が出ないほど驚いた。", ex4en: "Surprised to the extent I couldn't speak.", ex5jp: "毎日練習したいくらい好きだ。", ex5en: "I like it to the extent I want to practice daily." },
+                { pat: "〜くらい〜はない / 〜ほど〜はない", exp: "Nothing is as... as...", ex1jp: "彼ほど優しい人はいない。", ex1en: "No one is as kind as him.", ex2jp: "健康くらい大切なものはない。", ex2en: "Nothing is as important as health.", ex3jp: "ハワイほど海が綺麗なところはない。", ex3en: "No place is as beautiful as Hawaii.", ex4jp: "ゲームくらい面白いものはない。", ex4en: "Nothing is as interesting as games.", ex5jp: "テストほど嫌なものはない。", ex5en: "Nothing is as hateful as a test." },
+                { pat: "〜くらいなら", exp: "Rather than... I'd rather...", ex1jp: "彼と結婚するくらいなら独身がいい。", ex1en: "Rather than marrying him, being single is better.", ex2jp: "辞めるくらいなら最初からやらない。", ex2en: "Rather than quitting halfway, I wouldn't start.", ex3jp: "あんな店に行くくらいなら家で食べる。", ex3en: "Rather than going there, I'll eat at home.", ex4jp: "嘘をつくくらいなら黙る。", ex4en: "Rather than lying, I'll stay silent.", ex5jp: "お金を払うくらいなら歩く。", ex5en: "Rather than paying, I'll walk." },
+                { pat: "〜に限る (にかぎる)", exp: "Is the best (subjective judgment).", ex1jp: "夏の飲み物はビールに限る。", ex1en: "For summer drinks, beer is the best.", ex2jp: "疲れた時は寝るに限る。", ex2en: "When tired, sleeping is the best.", ex3jp: "風邪には温かいお茶に限る。", ex3en: "For a cold, warm tea is the best.", ex4jp: "映画は映画館で見るに限る。", ex4en: "For movies, watching at a theater is best.", ex5jp: "休日は家で休むに限る。", ex5en: "On holidays, resting at home is best." },
+                { pat: "〜に限って (にかぎって)", exp: "Only on (that day) / Only when... / Of all things...", ex1jp: "急いでいる時に限ってバスが遅れる。", ex1en: "Of all times, the bus is late only when I'm in a hurry.", ex2jp: "傘を持たない日に限って雨が降る。", ex2en: "It rains only on days I don't have an umbrella.", ex3jp: "あの人に限って嘘はつかない。", ex3en: "He of all people wouldn't lie.", ex4jp: "今日に限って店が休みだ。", ex4en: "Of all days, the shop is closed today.", ex5jp: "うちの子に限ってそんなことはしない。", ex5en: "My child of all people wouldn't do that." },
+                { pat: "〜だけあって", exp: "As expected of... / Being that...", ex1jp: "アメリカに住んでいただけあって英語が上手だ。", ex1en: "As expected of living in the US, his English is good.", ex2jp: "高いだけあって美味しい。", ex2en: "As expected of being expensive, it's delicious.", ex3jp: "練習しただけあって優勝できた。", ex3en: "Being that I practiced, I won.", ex4jp: "有名なホテルだけあってサービスが良い。", ex4en: "As expected of a famous hotel, service is good.", ex5jp: "社長だけあって決断が早い。", ex5en: "As expected of the president, decisions are fast." },
+                { pat: "〜だけに", exp: "Precisely because... (As expected).", ex1jp: "期待が大きかっただけにショックだ。", ex1en: "Precisely because expectations were high, the shock is big.", ex2jp: "安いだけにすぐ壊れた。", ex2en: "Precisely because it was cheap, it broke fast.", ex3jp: "長く住んでいるだけに詳しい。", ex3en: "Precisely because he lived here long, he knows a lot.", ex4jp: "努力しただけに合格が嬉しい。", ex4en: "Precisely because I made an effort, passing makes me happy.", ex5jp: "有名なだけに人が多い。", ex5en: "Precisely because it's famous, there are many people." },
+                { pat: "〜限り (かぎり)", exp: "As long as... / As far as...", ex1jp: "生きている限り君を愛する。", ex1en: "As long as I live, I will love you.", ex2jp: "私の知る限り、彼は独身だ。", exen: "As far as I know, he is single.", ex3jp: "雨が降らない限り、行きます。", ex3en: "As long as it doesn't rain, I will go.", ex4jp: "社長である限り、責任がある。", ex4en: "As long as I am president, I have responsibility.", ex5jp: "許す限り、努力する。", ex5en: "As far as permitted, I will try." },
+                { pat: "〜に限り", exp: "Limited to... / Only for...", ex1jp: "本日ご来店のお客様に限り、半額です。", ex1en: "Limited only to customers visiting today, it is half price.", ex2jp: "女性に限り無料です。", ex2en: "Limited to women, it is free.", ex3jp: "このチケットに限り有効です。", ex3en: "Valid limited only to this ticket.", ex4jp: "学生に限り、割引があります。", ex4en: "Discounts are limited to students.", ex5jp: "先着百名様に限りプレゼント。", ex5en: "Present limited to the first 100 people." },
+                { pat: "〜にかけては", exp: "When it comes to... (Usually followed by positive evaluation).", ex1jp: "数学にかけては、彼が一番だ。", ex1en: "When it comes to math, he is the best.", ex2jp: "料理にかけては自信がある。", ex2en: "When it comes to cooking, I have confidence.", ex3jp: "足の速さにかけては誰にも負けない。", ex3en: "When it comes to foot speed, I won't lose to anyone.", ex4jp: "歌にかけては彼女がクラスで一番だ。", ex4en: "When it comes to singing, she is the best in class.", ex5jp: "パソコンの知識にかけては彼が専門家だ。", ex5en: "When it comes to PC knowledge, he is the expert." },
+
+                // PERSPECTIVE, ROLE, FOCUS
+                { pat: "〜にとって", exp: "For... / From the perspective of...", ex1jp: "私にとって家族が一番だ。", ex1en: "For me, family is number one.", ex2jp: "現代人にとってスマホは必需品だ。", ex2en: "For modern people, smartphones are necessities.", ex3jp: "子どもにとって難しい本だ。", ex3en: "A difficult book for children.", ex4jp: "環境問題は私たちにとって大きな課題だ。", ex4en: "Environmental issues are big tasks for us.", ex5jp: "外国人にとって漢字は難しい。", ex5en: "For foreigners, Kanji is difficult." },
+                { pat: "〜として", exp: "As a... (Role, capacity, or title).", ex1jp: "留学生として日本に来た。", ex1en: "Came to Japan as a foreign student.", ex2jp: "趣味としてピアノを弾く。", ex2en: "Play piano as a hobby.", ex3jp: "代表として出席する。", ex3en: "Attend as a representative.", ex4jp: "医者として人を助ける。", ex4en: "Help people as a doctor.", ex5jp: "病院として使われている。", ex5en: "Used as a hospital." },
+                { pat: "〜を中心に", exp: "Centered around... / Mainly...", ex1jp: "東京を中心に地震があった。", ex1en: "Earthquake centered around Tokyo.", ex2jp: "若者を中心に流行っている。", ex2en: "Popular mainly among youths.", ex3jp: "駅を中心に町が発展した。", ex3en: "Town developed centered around the station.", ex4jp: "文法を中心に勉強する。", ex4en: "Study focusing on grammar.", ex5jp: "リーダーを中心にまとまる。", ex5en: "Unite centered around the leader." },
+                { pat: "〜を問わず (をとわず)", exp: "Regardless of...", ex1jp: "年齢を問わず参加できる。", ex1en: "Can participate regardless of age.", ex2jp: "昼夜を問わず働く。", ex2en: "Work regardless of day/night.", ex3jp: "経験の有無を問わず募集する。", ex3en: "Recruiting regardless of experience.", ex4jp: "男女を問わず人気だ。", ex4en: "Popular regardless of gender.", ex5jp: "季節を問わず楽しめる。", ex5en: "Can be enjoyed regardless of season." },
+                { pat: "〜をはじめ", exp: "Starting with... / Including...", ex1jp: "校長先生をはじめ、皆様ありがとう。", ex1en: "Starting with the principal, thank you everyone.", ex2jp: "寿司をはじめ日本食が好きだ。", ex2en: "I like Japanese food, starting with sushi.", ex3jp: "京都をはじめ色々な場所に行った。", ex3en: "Went places, starting with Kyoto.", ex4jp: "両親をはじめ家族が喜んだ。", ex4en: "Family was happy, starting with parents.", ex5jp: "スポーツをはじめ趣味が多い。", ex5en: "Many hobbies, including sports." },
+                { pat: "〜をもとに", exp: "Based on...", ex1jp: "実話をもとに作られた映画。", ex1en: "Movie made based on a true story.", ex2jp: "結果をもとに改善する。", ex2en: "Improve based on results.", ex3jp: "点数をもとにクラスを分ける。", ex3en: "Divide classes based on scores.", ex4jp: "小説をもとにしたドラマ。", ex4en: "Drama based on a novel.", ex5jp: "データをもとに議論する。", ex5en: "Argue based on data." },
+                { pat: "〜にこたえて", exp: "In response to...", ex1jp: "ファンの期待にこたえて映画化された。", ex1en: "Made into a movie in response to fans' expectations.", ex2jp: "リクエストにこたえて歌います。", ex2en: "I will sing in response to the request.", ex3jp: "親の期待にこたえたい。", ex3en: "I want to meet (respond to) my parents' expectations.", ex4jp: "要望にこたえて商品を開発した。", ex4en: "Developed the product in response to demands.", ex5jp: "アンコールの声にこたえて登場した。", ex5en: "Appeared in response to the encore cheers." },
+                { pat: "〜に沿って (にそって)", exp: "Along with / In accordance with...", ex1jp: "川に沿って歩く。", ex1en: "Walk along the river.", ex2jp: "マニュアルに沿って組み立てる。", ex2en: "Assemble in accordance with the manual.", ex3jp: "計画に沿って進める。", ex3en: "Proceed in accordance with the plan.", ex4jp: "お客様の希望に沿ってデザインします。", ex4en: "Design in accordance with the customer's wishes.", ex5jp: "ルールに沿って行動する。", ex5en: "Act in accordance with the rules." },
+                { pat: "〜に基づいて (にもとづいて)", exp: "Based upon...", ex1jp: "法律に基づいて判断する。", ex1en: "Judge based upon the law.", ex2jp: "事実に基づいて書かれた小説。", ex2en: "A novel written based upon facts.", ex3jp: "調査データに基づいて発表した。", ex3en: "Announced based upon survey data.", ex4jp: "経験に基づいてアドバイスをする。", ex4en: "Give advice based upon experience.", ex5jp: "計画に基づいて実行する。", ex5en: "Execute based upon the plan." },
+
+                // STATE, CONDITION, TENDENCY
+                { pat: "〜っぱなし", exp: "Leaving something in an improper state.", ex1jp: "ドアを開けっぱなしにしないで。", ex1en: "Don't leave the door wide open.", ex2jp: "テレビをつけっぱなしで寝た。", ex2en: "Slept with TV left on.", ex3jp: "水を出しっぱなしにするな。", ex3en: "Don't leave water running.", ex4jp: "立ちっぱなしで疲れた。", ex4en: "Tired from being left standing.", ex5jp: "服を脱ぎっぱなしにする。", ex5en: "Leave clothes lying around." },
+                { pat: "〜きり", exp: "Since (no change) / Just that / Only.", ex1jp: "彼とは去年会ったきりだ。", ex1en: "Haven't met him since last year.", ex2jp: "出かけたきり帰らない。", ex2en: "Went out and hasn't returned since.", ex3jp: "二人きりで話そう。", ex3en: "Let's talk just the two of us.", ex4jp: "一回きりのチャンス。", ex4en: "One-time-only chance.", ex5jp: "寝たきりの生活。", ex5en: "Bedridden life." },
+                { pat: "〜ふりをする", exp: "To pretend to...", ex1jp: "寝ているふりをした。", ex1en: "Pretended to be sleeping.", ex2jp: "聞こえないふりをするな。", ex2en: "Don't pretend not to hear.", ex3jp: "分からないふりをした。", ex3en: "Pretended not to understand.", ex4jp: "病気のふりをして休んだ。", ex4en: "Pretended to be sick and took a day off.", ex5jp: "知っているふりをする。", ex5en: "Pretend to know." },
+                { pat: "〜だらけ", exp: "Full of... / Covered in... (Usually negative).", ex1jp: "この部屋はゴミだらけだ。", ex1en: "This room is full of trash.", ex2jp: "泥だらけの靴。", ex2en: "Mud-covered shoes.", ex3jp: "間違いだらけのテスト。", ex3en: "Test full of mistakes.", ex4jp: "借金だらけの生活。", ex4en: "Life full of debt.", ex5jp: "傷だらけの手。", ex5en: "Hands covered in scratches." },
+                { pat: "〜がち", exp: "Tend to... / Apt to... (Usually negative tendency).", ex1jp: "最近、彼は病気がちだ。", ex1en: "Recently he tends to get sick.", ex2jp: "子どもの頃、風邪を引きがちだった。", ex2en: "As a child I tended to catch colds.", ex3jp: "忘れがちなことをメモする。", ex3en: "Memo things I tend to forget.", ex4jp: "曇りがちの天気。", ex4en: "Cloudy-tending weather.", ex5jp: "遠慮がちに話す。", ex5en: "Speak hesitantly." },
+                { pat: "〜気味 (ぎみ)", exp: "Slightly... / A touch of... (Negative feeling).", ex1jp: "今日は少し風邪気味です。", ex1en: "Have a slight cold today.", ex2jp: "最近、太り気味だ。", ex2en: "Feeling a bit fat recently.", ex3jp: "疲れ気味なので早く寝る。", ex3en: "Feeling tired so sleeping early.", ex4jp: "緊張気味の顔。", ex4en: "Slightly nervous face.", ex5jp: "寝不足気味で頭が痛い。", ex5en: "Slight lack of sleep, head hurts." },
+                { pat: "〜っぽい", exp: "-ish / Looks like... / Tends to...", ex1jp: "あの人は子どもっぽい。", ex1en: "That person is childish.", ex2jp: "この服は安っぽい。", ex2en: "These clothes look cheap.", ex3jp: "忘れっぽい性格です。", ex3en: "Forgetful personality.", ex4jp: "黒っぽい服が好き。", ex4en: "Like black-ish clothes.", ex5jp: "怒りっぽい人は嫌いだ。", ex5en: "Hate quick-tempered people." },
+                { pat: "〜ぬく", exp: "To do something completely to the end (often despite hardship).", ex1jp: "最後まで走りぬく。", ex1en: "Run completely to the end.", ex2jp: "悩みぬいた末に決めた。", ex2en: "Decided after agonizing completely over it.", ex3jp: "このプロジェクトをやりぬく。", ex3en: "I will carry this project through to the end.", ex4jp: "耐えぬく力が必要だ。", ex4en: "The strength to endure completely is necessary.", ex5jp: "考えぬいたアイデアだ。", ex5en: "An idea thought completely through." },
+                { pat: "〜かけ / 〜かける", exp: "Half-done / In the middle of doing.", ex1jp: "テーブルの上に飲みかけのコーヒーがある。", ex1en: "There's half-drunk coffee on the table.", ex2jp: "読みかけの本を置く。", ex2en: "Put down a half-read book.", ex3jp: "言いかけて、やめた。", ex3en: "I started to say something, then stopped.", ex4jp: "作りかけのプラモデル。", ex4en: "A half-made plastic model.", ex5jp: "死にかけた。", ex5en: "I was half-dead (almost died)." },
+
+                // ASSUMPTIONS, JUDGMENTS, RULES
+                { pat: "〜に決まっている", exp: "It must be / It is definitely...", ex1jp: "彼が勝つに決まっている。", ex1en: "He's definitely going to win.", ex2jp: "嘘に決まっている。", ex2en: "Definitely a lie.", ex3jp: "高い店は美味しいに決まっている。", ex3en: "Expensive shops are definitely delicious.", ex4jp: "失敗するに決まっている。", ex4en: "Bound to fail.", ex5jp: "寂しいに決まっている。", ex5en: "Definitely lonely." },
+                { pat: "〜に違いない", exp: "I am sure that... / It must be... (Logical deduction).", ex1jp: "犯人は彼に違いない。", ex1en: "I'm sure the culprit is him.", ex2jp: "この時計は高いに違いない。", ex2en: "This watch must be expensive.", ex3jp: "寝ているに違いない。", ex3en: "Must be sleeping.", ex4jp: "事実に違いない。", ex4en: "Must be a fact.", ex5jp: "上手になるに違いない。", ex5en: "I'm sure it will get better." },
+                { pat: "〜わけがない", exp: "There is no way that... / It's impossible.", ex1jp: "子どもに分かるわけがない。", ex1en: "No way a child can understand.", ex2jp: "彼が嘘をつくわけがない。", ex2en: "No way he'd lie.", ex3jp: "あんな店、美味しいわけがない。", ex3en: "No way that shop is delicious.", ex4jp: "合格するわけがない。", ex4en: "No way you'll pass.", ex5jp: "今日が日曜日のわけがない。", ex5en: "No way today is Sunday." },
+                { pat: "〜わけではない / 〜わけじゃない", exp: "It doesn't mean that... / It's not that...", ex1jp: "お金があれば幸せなわけではない。", ex1en: "Doesn't mean money makes you happy.", ex2jp: "嫌いなわけじゃない。", ex2en: "Not that I hate it.", ex3jp: "全部終わったわけではない。", ex3en: "Not that it's all finished.", ex4jp: "肉を食べないわけではない。", ex4en: "Doesn't mean I don't eat meat.", ex5jp: "完全に信じているわけではない。", ex5en: "Not that I completely believe it." },
+                { pat: "〜とは限らない", exp: "Not necessarily... / Not always...", ex1jp: "高いものが良いとは限らない。", ex1en: "Expensive isn't always good.", ex2jp: "皆が寿司を好きだとは限らない。", ex2en: "Not necessarily true everyone likes sushi.", ex3jp: "強いチームが勝つとは限らない。", ex3en: "Strong team doesn't always win.", ex4jp: "新聞が事実とは限らない。", ex4en: "Newspaper isn't necessarily fact.", ex5jp: "彼が来るとは限らない。", ex5en: "He won't necessarily come." },
+                { pat: "〜ことだ", exp: "Should / It is better to (Giving advice/rules).", ex1jp: "毎日練習することだ。", ex1en: "You should practice daily.", ex2jp: "無理をしないことだ。", ex2en: "Shouldn't overdo it.", ex3jp: "早く寝ることです。", ex3en: "You should sleep early.", ex4jp: "悪口は言わないことだ。", ex4en: "Shouldn't speak ill.", ex5jp: "野菜を食べることだ。", ex5en: "Should eat vegetables." },
+                { pat: "〜ということだ", exp: "It means that... / I heard that... (Summary or Hearsay).", ex1jp: "勉強が足りなかったということだ。", ex1en: "It means you didn't study enough.", ex2jp: "明日から寒くなるということだ。", ex2en: "I heard it'll get cold tomorrow.", ex3jp: "彼は来ないということですね。", ex3en: "It means he isn't coming, right?", ex4jp: "ボーナスが出るということだ。", ex4en: "Heard we get a bonus.", ex5jp: "タバコを吸ってはいけないということだ。", ex5en: "Means you must not smoke." },
+                { pat: "〜ものだ / 〜ものではない", exp: "It is natural to... / One should not... (General truth).", ex1jp: "子どもは外で遊ぶものだ。", ex1en: "Natural for children to play outside.", ex2jp: "人の話は静かに聞くものだ。", ex2en: "Should quietly listen to people.", ex3jp: "約束は守るものだ。", ex3en: "Promises are meant to be kept.", ex4jp: "親にそんなことを言うものではない。", ex4en: "Shouldn't say that to parents.", ex5jp: "簡単に諦めるものではない。", ex5en: "Shouldn't give up easily." },
+                { pat: "〜べきだ / 〜べきではない", exp: "Should / Should not (Strong moral duty).", ex1jp: "約束は守るべきだ。", ex1en: "Should keep promises.", ex2jp: "嘘をつくべきではない。", ex2en: "Should not lie.", ex3jp: "学生はもっと勉強すべきだ。", ex3en: "Students should study more.", ex4jp: "あんな映画は見るべきではない。", ex4en: "Shouldn't watch that movie.", ex5jp: "困っている人を助けるべきだ。", ex5en: "Should help people in trouble." },
+                { pat: "〜まい", exp: "Will not... / Probably will not... (Negative volition or conjecture).", ex1jp: "二度とあんな所へ行くまい。", ex1en: "I will not go to a place like that ever again.", ex2jp: "彼には私の気持ちはわかるまい。", ex2en: "He probably won't understand my feelings.", ex3jp: "誰も信じまい。", ex3en: "Probably no one will believe it.", ex4jp: "お酒はもう飲むまいと決めた。", ex4en: "I decided I will not drink alcohol anymore.", ex5jp: "今日のことは誰にも言うまい。", ex5en: "I will not tell anyone about today." },
+                { pat: "〜おそれがある", exp: "There is a fear/risk that...", ex1jp: "津波のおそれがあります。", ex1en: "There is a risk of a tsunami.", ex2jp: "悪化するおそれがある。", ex2en: "There is a fear it will worsen.", ex3jp: "個人情報が漏れるおそれがある。", ex3en: "There is a risk personal info will leak.", ex4jp: "火事になるおそれがある。", ex4en: "There is a fear a fire will start.", ex5jp: "遅刻するおそれがある。", ex5en: "There is a risk of being late." },
+
+                // HYPOTHETICALS & CONDITIONS
+                { pat: "〜としたら / 〜とすれば", exp: "If it were the case that...", ex1jp: "1億円あるとしたら何をしますか。", ex1en: "If you had 100M yen, what would you do?", ex2jp: "地球が終わるとしたら何食べる？", ex2en: "If earth ended, what would you eat?", ex3jp: "彼が犯人だとすれば合う。", ex3en: "If he's the culprit, it fits.", ex4jp: "飛行機で行くとしたらいくらですか。", ex4en: "If going by plane, how much?", ex5jp: "生まれ変われるとしたら鳥になりたい。", ex5en: "If reborn, want to be a bird." },
+                { pat: "〜としても", exp: "Even if...", ex1jp: "失敗したとしても後悔しない。", ex1en: "Even if I fail, won't regret.", ex2jp: "安かったとしても買わない。", ex2en: "Even if cheap, won't buy.", ex3jp: "謝ったとしても許さない。", ex3en: "Even if apologized, won't forgive.", ex4jp: "雨が降ったとしても行きます。", ex4en: "Even if rains, will go.", ex5jp: "時間がかかったとしてもやる。", ex5en: "Even if it takes time, will do it." },
+                { pat: "〜にしても", exp: "Even... / Even considering...", ex1jp: "遅れるにしても電話して。", ex1en: "Even if late, call.", ex2jp: "冗談にしてもひどすぎる。", ex2en: "Even as a joke, too cruel.", ex3jp: "忙しいにしても返信できるだろう。", ex3en: "Even if busy, can reply.", ex4jp: "買うにしても教えて。", ex4en: "Even if buying, tell me.", ex5jp: "行くにしても少しだけだ。", ex5en: "Even if going, just a bit." },
+                { pat: "〜さえ〜ば", exp: "If only... then...", ex1jp: "薬を飲みさえすれば治ります。", ex1en: "If only you take medicine, you'll heal.", ex2jp: "お金さえあれば幸せ？", ex2en: "If only have money, happy?", ex3jp: "天気さえ良ければ行けるのに。", ex3en: "If only weather was good, could go.", ex4jp: "彼が来さえすれば始められる。", ex4en: "If only he comes, can start.", ex5jp: "愛さえあれば何もいらない。", ex5en: "If only there's love, need nothing." },
+                { pat: "〜(よ)うと〜まいと", exp: "Whether... or not...", ex1jp: "雨が降ろうと降るまいと、行く。", ex1en: "Whether it rains or not, I will go.", ex2jp: "彼が来ようと来まいと、始める。", ex2en: "Whether he comes or not, we will start.", ex3jp: "信じようと信じまいと、これは事実だ。", ex3en: "Whether you believe it or not, this is a fact.", ex4jp: "買おうと買うまいと、あなたの自由だ。", ex4en: "Whether you buy it or not, it's your freedom.", ex5jp: "誰が言おうと言うまいと、関係ない。", ex5en: "Whether anyone says it or not, it doesn't matter." },
+
+                // EMPHASIS, EMOTION, INABILITY
+                { pat: "〜なんか / 〜なんて", exp: "Things like... / Belittling or Humbling.", ex1jp: "お化けなんて怖くない。", ex1en: "Not scared of ghosts.", ex2jp: "私なんかまだまだです。", ex2en: "Someone like me has a long way to go.", ex3jp: "あんなヤツなんか嫌いだ。", ex3en: "I hate a guy like that.", ex4jp: "彼なんか大嫌いだ。", ex4en: "Hate someone like him.", ex5jp: "嘘なんてついていません。", ex5en: "Not doing something like lying." },
+                { pat: "〜てたまらない", exp: "So... that I can't stand it.", ex1jp: "喉が渇いてたまらない。", ex1en: "So thirsty I can't stand it.", ex2jp: "彼に会いたくてたまらない。", ex2en: "Miss him so much I can't stand it.", ex3jp: "虫に刺されて痒くてたまらない。", ex3en: "Bug bite so itchy I can't stand it.", ex4jp: "楽しみでたまらない。", ex4en: "Looking forward so much can't stand it.", ex5jp: "寒くてたまらない。", ex5en: "So cold can't stand it." },
+                { pat: "〜てしかたがない", exp: "Cannot help but... / Extremely...", ex1jp: "気になってしかたがない。", ex1en: "So curious I can't help it.", ex2jp: "お腹が空いてしかたがない。", ex2en: "So hungry I can't help it.", ex3jp: "暇でしかたがない。", ex3en: "So bored I can't help it.", ex4jp: "彼がかわいそうでしかたがない。", ex4en: "Feel extremely sorry for him.", ex5jp: "嬉しくてしかたがない。", ex5en: "Incredibly happy." },
+                { pat: "〜てならない", exp: "Cannot help feeling... / Unbearably...", ex1jp: "将来が心配でならない。", ex1en: "I am unbearably worried about the future.", ex2jp: "故郷の家族が思い出されてならない。", ex2en: "I cannot help but recall my family in my hometown.", ex3jp: "残念でならない。", ex3en: "It is unbearably regrettable.", ex4jp: "悲しくてならない。", ex4en: "I am unbearably sad.", ex5jp: "不思議に思えてならない。", ex5en: "I cannot help but find it strange." },
+                { pat: "〜ないではいられない / 〜ずにはいられない", exp: "Can't help but do... / Can't stop myself from...", ex1jp: "笑わないではいられなかった。", ex1en: "I couldn't help but laugh.", ex2jp: "言わずにはいられない。", ex2en: "I can't help but say it.", ex3jp: "泣かずにはいられなかった。", ex3en: "I couldn't stop myself from crying.", ex4jp: "あのケーキを食べないではいられない。", ex4en: "I can't stop myself from eating that cake.", ex5jp: "感謝せずにはいられない。", ex5en: "I can't help but feel grateful." },
+
+                // OBLIGATIONS & SUGGESTIONS
+                { pat: "〜わけにはいかない", exp: "Must not / Cannot afford to (due to social/moral reasons).", ex1jp: "今日は休むわけにはいかない。", ex1en: "I cannot afford to take the day off today.", ex2jp: "ルールを破るわけにはいかない。", ex2en: "I cannot break the rules.", ex3jp: "一人だけ帰るわけにはいかない。", ex3en: "I cannot go home by myself.", ex4jp: "先輩の誘いを断るわけにはいかない。", ex4en: "I cannot refuse the senior's invitation.", ex5jp: "負けるわけにはいかない。", ex5en: "I cannot afford to lose." },
+                { pat: "〜ないわけにはいかない", exp: "Must do / Have no choice but to do (double negative).", ex1jp: "行かないわけにはいかない。", ex1en: "I have no choice but to go.", ex2jp: "払わないわけにはいかない。", ex2en: "I must pay.", ex3jp: "言わないわけにはいかない。", ex3en: "I have to say it.", ex4jp: "社長の命令だから、やらないわけにはいかない。", ex4en: "Because it's the president's order, I must do it.", ex5jp: "試験があるから、勉強しないわけにはいかない。", ex5en: "Because there's an exam, I have no choice but to study." },
+                { pat: "〜ざるを得ない (ざるをえない)", exp: "Have no choice but to... / Am forced to...", ex1jp: "中止せざるを得ない。", ex1en: "We have no choice but to cancel.", ex2jp: "彼の意見に賛成せざるを得ない。", ex2en: "I am forced to agree with his opinion.", ex3jp: "あきらめざるを得なかった。", ex3en: "I had no choice but to give up.", ex4jp: "会社を辞めざるを得ない。", ex4en: "I have no choice but to quit the company.", ex5jp: "謝らざるを得ない。", ex5en: "I am forced to apologize." },
+                { pat: "〜ことになっている", exp: "It is a rule/custom that...", ex1jp: "この部屋ではタバコを吸ってはいけないことになっている。", ex1en: "It is a rule that you cannot smoke in this room.", ex2jp: "明日、社長に会うことになっています。", ex2en: "It is scheduled that I will meet the president tomorrow.", ex3jp: "日本では靴を脱ぐことになっている。", ex3en: "In Japan, it's a custom to take off shoes.", ex4jp: "会議は月曜日に行われることになっている。", ex4en: "Rule that meeting is held Monday.", ex5jp: "法律で禁止されていることになっている。", ex5en: "Stipulated as prohibited by law." },
+                { pat: "〜ようになっている", exp: "Designed to / Works so that...", ex1jp: "このドアは自動で閉まるようになっている。", ex1en: "This door is designed to close automatically.", ex2jp: "暗くなると電気がつくようになっている。", ex2en: "Designed so lights turn on when dark.", ex3jp: "誰でも簡単に使えるようになっている。", ex3en: "Designed so anyone can use it easily.", ex4jp: "ボタンを押すと水が出るようになっている。", ex4en: "Works so water comes out when pressed.", ex5jp: "パスワードを間違えるとロックされるようになっている。", ex5en: "Designed to lock if wrong password." },
+
+                // MISC NOUN MODIFIERS
+                { pat: "〜につき", exp: "Due to... / Per... (Formal/Signs).", ex1jp: "清掃中につき、使用禁止。", ex1en: "Due to cleaning, use is prohibited.", ex2jp: "雨天につき、試合は中止します。", ex2en: "Due to rainy weather, the game is canceled.", ex3jp: "一人につき千円です。", ex3en: "It is 1000 yen per person.", ex4jp: "工事中につき、ご迷惑をおかけします。", ex4en: "Due to construction, we apologize for the inconvenience.", ex5jp: "一回につき二時間まで。", ex5en: "Up to 2 hours per time." },
+                { pat: "〜とともに", exp: "Together with... / As X happens, Y happens.", ex1jp: "家族とともに日本へ来ました。", ex1en: "I came to Japan together with my family.", ex2jp: "年をとるとともに、体力が落ちる。", ex2en: "As one gets older, physical strength declines.", ex3jp: "スマホの普及とともに、生活が変わった。", ex3en: "Along with the spread of smartphones, life changed.", ex4jp: "春の訪れとともに花が咲く。", ex4en: "With the arrival of spring, flowers bloom.", ex5jp: "彼とともに歩んでいく。", ex5en: "I will walk together with him." },
+                { pat: "〜に伴って (にともなって)", exp: "As... / In proportion to... / Accompanying...", ex1jp: "人口の増加に伴って、問題が増えた。", ex1en: "Accompanying the population increase, problems increased.", ex2jp: "経済の発展に伴い、生活が豊かになる。", ex2en: "As the economy develops, life becomes richer.", ex3jp: "工事に伴って、道路が通行止めになる。", ex3en: "Accompanying the construction, the road will be closed.", ex4jp: "年齢に伴って、考え方が変わる。", ex4en: "Thought process changes in proportion to age.", ex5jp: "技術の進歩に伴い、仕事が減る。", ex5en: "As technology advances, jobs decrease." },
+                { pat: "〜につれて", exp: "As X changes, Y changes (Gradual change).", ex1jp: "年をとるにつれて、涙もろくなる。", ex1en: "As I get older, I become more prone to tears.", ex2jp: "山を登るにつれて、気温が下がる。", ex2en: "As we climb the mountain, the temperature drops.", ex3jp: "時間が経つにつれて、痛みが消えた。", ex3en: "As time passed, the pain disappeared.", ex4jp: "町が発展するにつれて、自然が減った。", ex4en: "As the town developed, nature decreased.", ex5jp: "慣れるにつれて、楽しくなった。", ex5en: "As I got used to it, it became fun." },
+                { pat: "〜にしたがって", exp: "Following... / In accordance with... / As...", ex1jp: "ルールにしたがって行動する。", ex1en: "Act in accordance with the rules.", ex2jp: "先生の指示にしたがってください。", ex2en: "Please follow the teacher's instructions.", ex3jp: "北へ行くにしたがって、紅葉が遅くなる。", ex3en: "As you go north, the autumn leaves appear later.", ex4jp: "経験を積むにしたがって、自信がついた。", ex4en: "As I gained experience, I gained confidence.", ex5jp: "案内にしたがって進んでください。", ex5en: "Please proceed following the guidance." },
+                { pat: "〜にすぎない", exp: "Is nothing more than... / Is merely...", ex1jp: "それは言い訳にすぎない。", ex1en: "That is merely an excuse.", ex2jp: "彼とはただの友達にすぎない。", ex2en: "I am nothing more than just friends with him.", ex3jp: "これはひとつの例にすぎません。", ex3en: "This is merely one example.", ex4jp: "夢を見たにすぎない。", ex4en: "I merely had a dream.", ex5jp: "少し熱があるにすぎないから大丈夫だ。", ex5en: "It's nothing more than a slight fever, so I'm fine." },
+                { pat: "〜にほかならない", exp: "Is nothing but... / Is exactly...", ex1jp: "彼が成功したのは努力の結果にほかならない。", ex1en: "His success is exactly the result of effort.", ex2jp: "これは愛にほかならない。", ex2en: "This is nothing but love.", ex3jp: "親の厳しさは愛情にほかならない。", ex3en: "A parent's strictness is nothing but affection.", ex4jp: "事故の原因は不注意にほかならない。", ex4en: "The cause of the accident is exactly carelessness.", ex5jp: "彼を信じるにほかならない。", ex5en: "It is nothing but believing in him." },
+                { pat: "〜からいうと / 〜からいえば", exp: "From the standpoint of... / Judging from...", ex1jp: "今の成績からいうと、合格は難しい。", ex1en: "Judging from current grades, passing is difficult.", ex2jp: "法律からいうと、それは違法だ。", ex2en: "From the standpoint of the law, that is illegal.", ex3jp: "デザインからいうと、こっちがいい。", ex3en: "Judging from the design, this one is better.", ex4jp: "私の立場からいうと、賛成できない。", ex4en: "From my standpoint, I cannot agree.", ex5jp: "値段からいえば、これが一番お得だ。", ex5en: "Judging from the price, this is the best deal." },
+                { pat: "〜からして", exp: "Judging from (even the first/smallest detail)...", ex1jp: "タイトルからして面白そうだ。", ex1en: "Judging from the title alone, it looks interesting.", ex2jp: "彼の態度からして、反省していない。", ex2en: "Judging from his attitude, he is not reflecting on it.", ex3jp: "声からして、彼だと思った。", ex3en: "Judging from the voice, I thought it was him.", ex4jp: "服装からして、金持ちそうだ。", ex4en: "Judging from the clothes, they look rich.", ex5jp: "名前からして、フランスの料理だろう。", ex5en: "Judging from the name, it's probably a French dish." },
+                { pat: "〜を通して / 〜を通じて", exp: "Through... / Via... / Throughout (a period).", ex1jp: "友人を通して彼と知り合った。", ex1en: "I got to know him through a friend.", ex2jp: "インターネットを通じて世界とつながる。", ex2en: "Connect with the world via the internet.", ex3jp: "一年を通して暖かい気候だ。", ex3en: "It is a warm climate throughout the year.", ex4jp: "スポーツを通してルールを学ぶ。", ex4en: "Learn rules through sports.", ex5jp: "四季を通して美しい町だ。", ex5en: "A beautiful town throughout the four seasons." }
+            ];
+
+            // Safety Validation
+            defaultData.forEach((item, i) => {
+                if (!item.ex5en) { console.warn(`Missing ex5en at index ${i}`, item); }
+            });
+
+            let savedData = localStorage.getItem('jlpt_n3_flashcards_ultimate');
+            let data = savedData ? JSON.parse(savedData) : defaultData;
+            let currentIndex = 0;
+            
+            const card = document.getElementById('card');
+            const patternName = document.getElementById('pattern-name');
+            const explanation = document.getElementById('explanation');
+            
+            const examplesDisplay = document.getElementById('examples-display');
+            const ex1jp = document.getElementById('ex1-jp'), ex1en = document.getElementById('ex1-en');
+            const ex2jp = document.getElementById('ex2-jp'), ex2en = document.getElementById('ex2-en');
+            const ex3jp = document.getElementById('ex3-jp'), ex3en = document.getElementById('ex3-en');
+            const ex4jp = document.getElementById('ex4-jp'), ex4en = document.getElementById('ex4-en');
+            const ex5jp = document.getElementById('ex5-jp'), ex5en = document.getElementById('ex5-en');
+            const progress = document.getElementById('progress');
+            
+            const editFields = document.getElementById('edit-fields');
+            const editEx1Jp = document.getElementById('edit-ex1-jp'), editEx1En = document.getElementById('edit-ex1-en');
+            const editEx2Jp = document.getElementById('edit-ex2-jp'), editEx2En = document.getElementById('edit-ex2-en');
+            const editEx3Jp = document.getElementById('edit-ex3-jp'), editEx3En = document.getElementById('edit-ex3-en');
+            const editEx4Jp = document.getElementById('edit-ex4-jp'), editEx4En = document.getElementById('edit-ex4-en');
+            const editEx5Jp = document.getElementById('edit-ex5-jp'), editEx5En = document.getElementById('edit-ex5-en');
+
+            const btnEdit = document.getElementById('btn-edit');
+            const btnSaveEdit = document.getElementById('btn-save-edit');
+            
+            const modal = document.getElementById('add-modal');
+            const btnAddCard = document.getElementById('btn-add-card');
+            const btnCancelAdd = document.getElementById('btn-cancel-add');
+            const btnConfirmAdd = document.getElementById('btn-confirm-add');
+
+            function saveToStorage() {
+                localStorage.setItem('jlpt_n3_flashcards_ultimate', JSON.stringify(data));
+            }
+
+            function updateCard() {
+                card.classList.remove('is-flipped');
+                
+                examplesDisplay.style.display = 'block';
+                editFields.style.display = 'none';
+                btnEdit.style.display = 'block';
+                btnSaveEdit.style.display = 'none';
+
+                setTimeout(() => {
+                    patternName.textContent = data[currentIndex].pat;
+                    explanation.textContent = data[currentIndex].exp;
+                    
+                    ex1jp.textContent = data[currentIndex].ex1jp || ""; ex1en.textContent = data[currentIndex].ex1en || "";
+                    ex2jp.textContent = data[currentIndex].ex2jp || ""; ex2en.textContent = data[currentIndex].ex2en || "";
+                    ex3jp.textContent = data[currentIndex].ex3jp || ""; ex3en.textContent = data[currentIndex].ex3en || "";
+                    ex4jp.textContent = data[currentIndex].ex4jp || ""; ex4en.textContent = data[currentIndex].ex4en || "";
+                    ex5jp.textContent = data[currentIndex].ex5jp || ""; ex5en.textContent = data[currentIndex].ex5en || "";
+                    
+                    progress.textContent = `${currentIndex + 1} / ${data.length}`;
+                }, 200); 
+            }
+
+            card.addEventListener('click', (e) => {
+                if (e.target.tagName.toLowerCase() === 'button' || e.target.tagName.toLowerCase() === 'textarea') { return; }
+                card.classList.toggle('is-flipped');
+            });
+
+            document.getElementById('btn-next').addEventListener('click', () => {
+                currentIndex = (currentIndex + 1) % data.length; updateCard();
+            });
+
+            document.getElementById('btn-prev').addEventListener('click', () => {
+                currentIndex = (currentIndex - 1 + data.length) % data.length; updateCard();
+            });
+
+            btnEdit.addEventListener('click', (e) => {
+                e.stopPropagation(); 
+                examplesDisplay.style.display = 'none';
+                editFields.style.display = 'flex';
+                
+                editEx1Jp.value = data[currentIndex].ex1jp || ""; editEx1En.value = data[currentIndex].ex1en || "";
+                editEx2Jp.value = data[currentIndex].ex2jp || ""; editEx2En.value = data[currentIndex].ex2en || "";
+                editEx3Jp.value = data[currentIndex].ex3jp || ""; editEx3En.value = data[currentIndex].ex3en || "";
+                editEx4Jp.value = data[currentIndex].ex4jp || ""; editEx4En.value = data[currentIndex].ex4en || "";
+                editEx5Jp.value = data[currentIndex].ex5jp || ""; editEx5En.value = data[currentIndex].ex5en || "";
+                
+                btnEdit.style.display = 'none';
+                btnSaveEdit.style.display = 'block';
+            });
+
+            btnSaveEdit.addEventListener('click', (e) => {
+                e.stopPropagation(); 
+                data[currentIndex].ex1jp = editEx1Jp.value; data[currentIndex].ex1en = editEx1En.value; 
+                data[currentIndex].ex2jp = editEx2Jp.value; data[currentIndex].ex2en = editEx2En.value; 
+                data[currentIndex].ex3jp = editEx3Jp.value; data[currentIndex].ex3en = editEx3En.value; 
+                data[currentIndex].ex4jp = editEx4Jp.value; data[currentIndex].ex4en = editEx4En.value; 
+                data[currentIndex].ex5jp = editEx5Jp.value; data[currentIndex].ex5en = editEx5En.value; 
+                saveToStorage(); 
+                
+                ex1jp.textContent = data[currentIndex].ex1jp; ex1en.textContent = data[currentIndex].ex1en;
+                ex2jp.textContent = data[currentIndex].ex2jp; ex2en.textContent = data[currentIndex].ex2en;
+                ex3jp.textContent = data[currentIndex].ex3jp; ex3en.textContent = data[currentIndex].ex3en;
+                ex4jp.textContent = data[currentIndex].ex4jp; ex4en.textContent = data[currentIndex].ex4en;
+                ex5jp.textContent = data[currentIndex].ex5jp; ex5en.textContent = data[currentIndex].ex5en;
+                
+                examplesDisplay.style.display = 'block';
+                editFields.style.display = 'none';
+                btnEdit.style.display = 'block';
+                btnSaveEdit.style.display = 'none';
+            });
+
+            btnAddCard.addEventListener('click', () => { modal.style.display = 'flex'; });
+
+            btnCancelAdd.addEventListener('click', () => {
+                modal.style.display = 'none';
+                document.getElementById('new-pattern').value = ''; document.getElementById('new-explanation').value = '';
+                document.getElementById('new-ex1').value = ''; document.getElementById('new-ex2').value = '';
+                document.getElementById('new-ex3').value = ''; document.getElementById('new-ex4').value = '';
+                document.getElementById('new-ex5').value = '';
+            });
+
+            btnConfirmAdd.addEventListener('click', () => {
+                const pat = document.getElementById('new-pattern').value.trim();
+                const exp = document.getElementById('new-explanation').value.trim();
+                const parseEx = (val) => { const split = val.split('-'); return [split[0] ? split[0].trim() : "", split[1] ? split[1].trim() : ""]; };
+                
+                if (pat && exp) {
+                    const ex1 = parseEx(document.getElementById('new-ex1').value.trim()); const ex2 = parseEx(document.getElementById('new-ex2').value.trim());
+                    const ex3 = parseEx(document.getElementById('new-ex3').value.trim()); const ex4 = parseEx(document.getElementById('new-ex4').value.trim());
+                    const ex5 = parseEx(document.getElementById('new-ex5').value.trim());
+
+                    data.push({ 
+                        pat: pat, exp: exp, 
+                        ex1jp: ex1[0], ex1en: ex1[1], ex2jp: ex2[0], ex2en: ex2[1],
+                        ex3jp: ex3[0], ex3en: ex3[1], ex4jp: ex4[0], ex4en: ex4[1],
+                        ex5jp: ex5[0], ex5en: ex5[1]
+                    });
+                    
+                    saveToStorage(); currentIndex = data.length - 1; updateCard(); btnCancelAdd.click();
+                } else { alert("Please enter at least a Pattern and an Explanation!"); }
+            });
+
+            modal.addEventListener('touchstart', (e) => e.stopPropagation(), {passive: true});
+            modal.addEventListener('touchend', (e) => e.stopPropagation(), {passive: true});
+
+            let touchStartX = 0; let touchEndX = 0;
+            const swipeContainer = document.getElementById('swipe-container');
+
+            swipeContainer.addEventListener('touchstart', e => {
+                if(e.target.tagName.toLowerCase() === 'textarea') return;
+                touchStartX = e.changedTouches[0].screenX;
+            }, {passive: true});
+
+            swipeContainer.addEventListener('touchend', e => {
+                if(e.target.tagName.toLowerCase() === 'textarea') return;
+                touchEndX = e.changedTouches[0].screenX; handleSwipe();
+            }, {passive: true});
+
+            function handleSwipe() {
+                const threshold = 50; 
+                if (touchStartX - touchEndX > threshold) document.getElementById('btn-next').click();
+                if (touchEndX - touchStartX > threshold) document.getElementById('btn-prev').click();
+            }
+
+            updateCard();
+        });
+    </script>
+</body>
+</html>
